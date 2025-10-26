@@ -1,0 +1,15 @@
+# specify a list of ip providers
+providers:
+  - type: ipinfo
+  - type: ipify
+  - type: generic
+    params:
+      url: https://ipecho.net/plain
+
+# specify a list of dns updaters
+updaters:
+  - type: cloudflare
+    params:
+      zone_name: example.com
+      record_type: A
+      record_name: example.com

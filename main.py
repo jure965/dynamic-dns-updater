@@ -1,27 +1,14 @@
 import asyncio
-import os
 
 from dotenv import load_dotenv
+from ruamel.yaml import YAML
 
-from providers.ip import IPIfyIPProvider, IPInfoIPProvider
-from providers.dns import CloudflareDNSUpdater
+from dns_updaters import get_updater_class
+from ip_providers import get_provider_class
 
 
-async def perform_check():
-    ip_providers = [
-        IPIfyIPProvider(),
-        IPInfoIPProvider(),
-    ]
-
-    zone_name = os.environ.get("CLOUDFLARE_ZONE_NAME")
-    record_type = os.environ.get("CLOUDFLARE_RECORD_TYPE")
-    record_name = os.environ.get("CLOUDFLARE_RECORD_NAME")
-
-    dns_updaters = [
-        CloudflareDNSUpdater(zone_name, record_type, record_name),
-    ]
-
-    ip_tasks = [asyncio.create_task(provider.get_ip_address()) for provider in ip_providers]
+async def perform_check(providers, updaters):
+    ip_tasks = [asyncio.create_task(provider.get_ip_address()) for provider in providers]
     addresses = set(await asyncio.gather(*ip_tasks))
 
     if len(addresses) != 1:
@@ -33,19 +20,45 @@ async def perform_check():
     address = addresses.pop()
 
     if not address:
-        print("no address found")
+        print("Unable to get IP address")
         return
 
-    print(f"got address: {address}")
+    print(f"IP address consensus: {address}")
 
-    dns_tasks = [asyncio.create_task(updater.set_dns_record(address)) for updater in dns_updaters]
+    dns_tasks = [asyncio.create_task(updater.set_dns_record(address)) for updater in updaters]
     await asyncio.gather(*dns_tasks)
+
+
+def load_config():
+    yaml = YAML(typ="safe")
+
+    with open("config.yaml", "r") as config_file:
+        config = yaml.load(config_file)
+
+    providers = []
+    for provider in config["providers"]:
+        provider_class = get_provider_class(provider["type"])
+        provider_params = provider.get("params", None)
+
+        if provider_params:
+            providers.append(provider_class(**provider_params))
+        else:
+            providers.append(provider_class())
+
+    updaters = []
+    for updater in config["updaters"]:
+        updater_class = get_updater_class(updater["type"])
+        updater_params = updater.get("params", None)
+        updaters.append(updater_class(**updater_params))
+
+    return providers, updaters
 
 
 async def main():
     load_dotenv()
+    providers, updaters = load_config()
     print("Hello from dynamic-dns-updater!")
-    await perform_check()
+    await perform_check(providers, updaters)
 
 
 if __name__ == "__main__":
