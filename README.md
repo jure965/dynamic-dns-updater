@@ -9,7 +9,7 @@ IP address is correct. Tool compares the returned IP addresses and performs the 
 
 ## ToDo
 
-- refactor to async
+- add yaml configuration
 - add scheduler
 - containerize
 - add docker compose file

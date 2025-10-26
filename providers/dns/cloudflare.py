@@ -4,7 +4,7 @@ from cloudflare import Cloudflare
 from ipaddress import ip_address
 
 
-def set_dns_record(ip):
+async def set_dns_record(ip):
     zone_name = os.environ.get("CLOUDFLARE_ZONE_NAME")
     record_type = os.environ.get("CLOUDFLARE_RECORD_TYPE")
     record_name = os.environ.get("CLOUDFLARE_RECORD_NAME")
