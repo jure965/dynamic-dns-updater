@@ -12,6 +12,12 @@ providers:
   - type: plain
     params:
       url: https://ifconfig.me/ip
+  # with basic auth
+  - type: plain
+    params:
+      url: https://example.com/ip
+      username: username
+      password: password
 
 # specify a list of dns updaters
 updaters:

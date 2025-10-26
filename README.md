@@ -23,6 +23,12 @@ providers:
   - type: plain
     params:
       url: https://ipecho.net/plain
+  # with basic auth
+  - type: plain
+    params:
+      url: https://example.com/ip
+      username: username
+      password: password
 
 # specify a list of dns updaters
 updaters:
@@ -33,7 +39,6 @@ updaters:
       record_name: example.com
 ```
 
-
 ## ToDo
 
 - add proper logging
@@ -42,3 +47,4 @@ updaters:
 - add docker compose file
 - add self check api
 - add ip echo api
+- add unit tests
