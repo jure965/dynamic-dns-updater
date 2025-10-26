@@ -20,9 +20,7 @@ Create `config.yaml` file from [config.example.yaml](config.example.yaml):
 
 # specify a list of ip providers
 providers:
-  - type: ipinfo
-  - type: ipify
-  - type: generic
+  - type: plain
     params:
       url: https://ipecho.net/plain
 
