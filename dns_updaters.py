@@ -3,15 +3,15 @@ from ipaddress import ip_address
 
 
 class UnknownDNSUpdaterException(Exception):
-    def __init__(self, updater_name):
-        super().__init__(f"Unknown updater '{updater_name}'")
+    def __init__(self, updater_type):
+        super().__init__(f"Unknown updater type '{updater_type}'")
 
 
-def get_updater_class(updater_name):
-    match updater_name:
+def get_updater_class(updater_type):
+    match updater_type:
         case "cloudflare":
             return CloudflareDNSUpdater
-    raise UnknownDNSUpdaterException(updater_name)
+    raise UnknownDNSUpdaterException(updater_type)
 
 
 class BaseDNSUpdater:

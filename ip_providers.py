@@ -3,19 +3,15 @@ from ipaddress import IPv4Address, IPv6Address, ip_address
 
 
 class UnknownIPProviderException(Exception):
-    def __init__(self, provider_name):
-        super().__init__(f"Unknown provider '{provider_name}'")
+    def __init__(self, provider_type):
+        super().__init__(f"Unknown provider type '{provider_type}'")
 
 
-def get_provider_class(provider_name):
-    match provider_name:
-        case "ipify":
-            return IPIfyIPProvider
-        case "ipinfo":
-            return IPInfoIPProvider
-        case "generic":
-            return GenericIPProvider
-    raise UnknownIPProviderException(provider_name)
+def get_provider_class(provider_type):
+    match provider_type:
+        case "plain":
+            return PlainIPProvider
+    raise UnknownIPProviderException(provider_type)
 
 
 class BaseIPProvider:
@@ -26,7 +22,7 @@ class BaseIPProvider:
         raise NotImplementedError()
 
 
-class GenericIPProvider(BaseIPProvider):
+class PlainIPProvider(BaseIPProvider):
     """
     Basic GET request to a URL and a simple text response with IP address.
     """
@@ -40,16 +36,6 @@ class GenericIPProvider(BaseIPProvider):
         except ValueError as e:
             print(e)
 
-        print(f"{type(self).__name__} returned address {address} from {self.url}")
+        print(f"{type(self).__name__} ({self.url}) returned address {address}")
 
         return address
-
-
-class IPInfoIPProvider(GenericIPProvider):
-    def __init__(self):
-        super().__init__("https://ipinfo.io/ip")
-
-
-class IPIfyIPProvider(GenericIPProvider):
-    def __init__(self):
-        super().__init__("https://api.ipify.org")

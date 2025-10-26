@@ -1,10 +1,17 @@
 # specify a list of ip providers
 providers:
-  - type: ipinfo
-  - type: ipify
-  - type: generic
+  - type: plain
+    params:
+      url: https://ipinfo.io/ip
+  - type: plain
+    params:
+      url: https://api.ipify.org
+  - type: plain
     params:
       url: https://ipecho.net/plain
+  - type: plain
+    params:
+      url: https://ifconfig.me/ip
 
 # specify a list of dns updaters
 updaters:
