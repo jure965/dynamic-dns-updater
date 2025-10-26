@@ -1,16 +1,26 @@
 import asyncio
+import os
 
-import providers.ip
-import providers.dns
 from dotenv import load_dotenv
 
-
-ip_providers = providers.ip.all_providers
-
-dns_providers = providers.dns.all_providers
+from providers.ip import IPIfyIPProvider, IPInfoIPProvider
+from providers.dns import CloudflareDNSUpdater
 
 
 async def perform_check():
+    ip_providers = [
+        IPIfyIPProvider(),
+        IPInfoIPProvider(),
+    ]
+
+    zone_name = os.environ.get("CLOUDFLARE_ZONE_NAME")
+    record_type = os.environ.get("CLOUDFLARE_RECORD_TYPE")
+    record_name = os.environ.get("CLOUDFLARE_RECORD_NAME")
+
+    dns_updaters = [
+        CloudflareDNSUpdater(zone_name, record_type, record_name),
+    ]
+
     ip_tasks = [asyncio.create_task(provider.get_ip_address()) for provider in ip_providers]
     addresses = set(await asyncio.gather(*ip_tasks))
 
@@ -28,7 +38,7 @@ async def perform_check():
 
     print(f"got address: {address}")
 
-    dns_tasks = [asyncio.create_task(provider.set_dns_record(address)) for provider in dns_providers]
+    dns_tasks = [asyncio.create_task(updater.set_dns_record(address)) for updater in dns_updaters]
     await asyncio.gather(*dns_tasks)
 
 
