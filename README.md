@@ -38,6 +38,7 @@ updaters:
 
 ## ToDo
 
+- add proper logging
 - add scheduler
 - containerize
 - add docker compose file
