@@ -13,3 +13,5 @@ IP address is correct. Tool compares the returned IP addresses and performs the 
 - add scheduler
 - containerize
 - add docker compose file
+- add self check api
+- add ip echo api
