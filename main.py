@@ -1,27 +1,72 @@
 import asyncio
+from datetime import datetime, timezone, timedelta
 
 import aiocron
+import jwt
+
 from dotenv import load_dotenv
 from ruamel.yaml import YAML
-from aiohttp import web, ClientSession
+from aiohttp import web, ClientSession, ServerTimeoutError
 
 from dns_updaters import get_updater_class
 from ip_providers import get_provider_class
 
 
-async def handle(request):
+async def handle_ip(request):
     ip = request.headers.get("X-Forwarded-For", request.remote)
     return web.Response(text=ip)
 
 
+async def handle_check(request):
+    token = await request.text()
+
+    try:
+        payload = jwt.decode(token, "secret", algorithms=["HS256"])  # todo: secret from env var
+    except (jwt.ExpiredSignatureError, jwt.DecodeError):
+        return web.Response(text="Nope", status=400)
+
+    if payload.get("sub", None) != "server":
+        return web.Response(text="Nope", status=400)
+
+    response_token = jwt.encode({"sub": "client", "exp": datetime.now(tz=timezone.utc) + timedelta(minutes=1)}, "secret")  # todo: secret from env var
+    return web.Response(text=response_token, status=200)
+
+
 @aiocron.crontab("* * * * *", start=False)
 async def perform_self_check():
+    token = jwt.encode({"sub": "server", "exp": datetime.now(tz=timezone.utc) + timedelta(minutes=1)}, "secret")  # todo: secret from env var
     async with ClientSession() as session:
-        async with session.get("http://127.0.0.1:8080/ip") as response:  # todo: set url via configuration file
-            print(await response.text())
+        try:
+            async with session.post("http://127.0.0.1:8080/check", data=token) as response:  # todo: set url via configuration file
+                token = await response.text()
+
+            if response.status != 200:
+                print("got non 200 status response")
+                return
+
+            try:
+                payload = jwt.decode(token, "secret", algorithms=["HS256"])  # todo: secret from env var
+            except (jwt.ExpiredSignatureError, jwt.DecodeError) as e:
+                print(e)
+
+            if payload.get("sub", None) != "client":
+                print("self check failed")
+                await perform_ip_update()
+                return
+
+            print("self check passed")
+        except ServerTimeoutError as e:
+            print(e)
+            print("self check failed")
+            await perform_ip_update()
 
 
-async def perform_check(providers, updaters):
+async def perform_ip_update():
+    global updaters
+    global providers
+
+    print("performing ip update")
+
     ip_tasks = [asyncio.create_task(provider.get_ip_address()) for provider in providers]
     addresses = set(await asyncio.gather(*ip_tasks))
 
@@ -49,6 +94,7 @@ def load_config():
     with open("config.yaml", "r") as config_file:
         config = yaml.load(config_file)
 
+    global providers
     providers = []
     for provider in config["providers"]:
         provider_class = get_provider_class(provider["type"])
@@ -59,21 +105,26 @@ def load_config():
         else:
             providers.append(provider_class())
 
+    global updaters
     updaters = []
     for updater in config["updaters"]:
         updater_class = get_updater_class(updater["type"])
         updater_params = updater.get("params", None)
         updaters.append(updater_class(**updater_params))
 
-    return providers, updaters
+
+providers = []
+updaters = []
 
 
 async def main():
     load_dotenv()
+    load_config()
 
     app = web.Application()
     app.add_routes([
-        web.get("/ip", handle),
+        web.get("/ip", handle_ip),
+        web.post("/check", handle_check),
     ])
 
     runner = web.AppRunner(app)
@@ -82,7 +133,11 @@ async def main():
     await site.start()
 
     perform_self_check.start()
-    asyncio.get_event_loop().run_forever()
+    try:
+        asyncio.get_event_loop().run_forever()
+    except KeyboardInterrupt:
+        await runner.cleanup()
+        perform_self_check.cancel()
 
 
 if __name__ == "__main__":

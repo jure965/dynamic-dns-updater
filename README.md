@@ -44,5 +44,4 @@ updaters:
 - add proper logging
 - containerize
 - add docker compose file
-- add self check api
 - add unit tests
