@@ -29,13 +29,13 @@ class CloudflareDNSUpdater(BaseDNSUpdater):
         client = Cloudflare()
 
         try:
-            zone = client.zones.list(name=self.zone_name).result.pop()
+            zone = await client.zones.list(name=self.zone_name).result.pop()
         except IndexError as e:
             print(e)
             return
 
         try:
-            record = client.dns.records.list(zone_id=zone.id, type=self.record_type, name=self.record_name).result.pop()
+            record = await client.dns.records.list(zone_id=zone.id, type=self.record_type, name=self.record_name).result.pop()
         except IndexError as e:
             print(e)
             return
@@ -44,5 +44,5 @@ class CloudflareDNSUpdater(BaseDNSUpdater):
             print(f"{type(self).__name__} record {record.type} {record.name} {record.content} left unchanged")
             return
 
-        client.dns.records.edit(dns_record_id=record.id, zone_id=zone.id, type=self.record_type, name=self.record_name, content=str(new_ip))
+        record = await client.dns.records.edit(dns_record_id=record.id, zone_id=zone.id, type=self.record_type, name=self.record_name, content=str(new_ip))
         print(f"{type(self).__name__} record {record.type} {record.name} {record.content} changed content to {new_ip}")
