@@ -42,9 +42,7 @@ updaters:
 ## ToDo
 
 - add proper logging
-- add scheduler
 - containerize
 - add docker compose file
 - add self check api
-- add ip echo api
 - add unit tests

@@ -1,10 +1,24 @@
 import asyncio
 
+import aiocron
 from dotenv import load_dotenv
 from ruamel.yaml import YAML
+from aiohttp import web, ClientSession
 
 from dns_updaters import get_updater_class
 from ip_providers import get_provider_class
+
+
+async def handle(request):
+    ip = request.headers.get("X-Forwarded-For", request.remote)
+    return web.Response(text=ip)
+
+
+@aiocron.crontab("* * * * *", start=False)
+async def perform_self_check():
+    async with ClientSession() as session:
+        async with session.get("http://127.0.0.1:8080/ip") as response:  # todo: set url via configuration file
+            print(await response.text())
 
 
 async def perform_check(providers, updaters):
@@ -56,9 +70,19 @@ def load_config():
 
 async def main():
     load_dotenv()
-    providers, updaters = load_config()
-    print("Hello from dynamic-dns-updater!")
-    await perform_check(providers, updaters)
+
+    app = web.Application()
+    app.add_routes([
+        web.get("/ip", handle),
+    ])
+
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", 8080)
+    await site.start()
+
+    perform_self_check.start()
+    asyncio.get_event_loop().run_forever()
 
 
 if __name__ == "__main__":

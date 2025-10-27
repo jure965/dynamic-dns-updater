@@ -1,4 +1,4 @@
-import requests
+from aiohttp import ClientSession
 from ipaddress import IPv4Address, IPv6Address, ip_address
 
 
@@ -14,36 +14,28 @@ def get_provider_class(provider_type):
     raise UnknownIPProviderException(provider_type)
 
 
-class BaseIPProvider:
+class PlainIPProvider:
     def __init__(self, url, username=None, password=None):
         self.url = url
         self.username = username
         self.password = password
 
-    def _send_request(self):
+    async def get_ip_address(self) -> IPv4Address | IPv6Address:
+        auth = None
         if self.username and self.password:
-            return requests.get(self.url, auth=(self.username, self.password))
-        else:
-            return requests.get(self.url)
+            auth=(self.username, self.password)
 
-    async def get_ip_address(self) -> IPv4Address | IPv6Address:
-        raise NotImplementedError()
+        async with ClientSession(timeout=5) as session:
+            async with session.get(self.url, auth=auth) as response:
+                response_body = await response.text()
 
-
-class PlainIPProvider(BaseIPProvider):
-    """
-    Basic GET request to a URL and a simple text response with IP address.
-    """
-
-    async def get_ip_address(self) -> IPv4Address | IPv6Address:
-        response = self._send_request()
         address = None
 
         try:
-            address = ip_address(response.text)
+            address = ip_address(response_body)
         except ValueError as e:
             print(e)
 
-        print(f"{type(self).__name__} ({self.url}) returned address {address}")
+        print(f"{type(self).__name__} ({self.url}) returned '{address}'")
 
         return address
