@@ -1,5 +1,10 @@
+import logging
+
 from cloudflare import Cloudflare
 from ipaddress import ip_address
+
+
+logger = logging.getLogger(__name__)
 
 
 class UnknownDNSUpdaterException(Exception):
@@ -30,19 +35,14 @@ class CloudflareDNSUpdater(BaseDNSUpdater):
 
         try:
             zone = await client.zones.list(name=self.zone_name).result.pop()
-        except IndexError as e:
-            print(e)
-            return
-
-        try:
             record = await client.dns.records.list(zone_id=zone.id, type=self.record_type, name=self.record_name).result.pop()
         except IndexError as e:
-            print(e)
+            logger.error(e)
             return
 
         if ip_address(record.content) == new_ip:
-            print(f"{type(self).__name__} record {record.type} {record.name} {record.content} left unchanged")
+            logger.info(f"{type(self).__name__} record {record.type} {record.name} {record.content} left unchanged")
             return
 
         record = await client.dns.records.edit(dns_record_id=record.id, zone_id=zone.id, type=self.record_type, name=self.record_name, content=str(new_ip))
-        print(f"{type(self).__name__} record {record.type} {record.name} {record.content} changed content to {new_ip}")
+        logger.info(f"{type(self).__name__} record {record.type} {record.name} {record.content} changed content to {new_ip}")

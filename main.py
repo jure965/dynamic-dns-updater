@@ -3,6 +3,7 @@ from datetime import datetime, timezone, timedelta
 
 import aiocron
 import jwt
+import logging
 
 from dotenv import load_dotenv
 from ruamel.yaml import YAML
@@ -10,6 +11,9 @@ from aiohttp import web, ClientSession, ServerTimeoutError
 
 from dns_updaters import get_updater_class
 from ip_providers import get_provider_class
+
+
+logger = logging.getLogger(__name__)
 
 
 async def handle_ip(request):
@@ -41,23 +45,23 @@ async def perform_self_check():
                 token = await response.text()
 
             if response.status != 200:
-                print("got non 200 status response")
+                logger.warning("got non 200 status response")
                 return
 
             try:
                 payload = jwt.decode(token, "secret", algorithms=["HS256"])  # todo: secret from env var
             except (jwt.ExpiredSignatureError, jwt.DecodeError) as e:
-                print(e)
+                logger.warning(e)
 
             if payload.get("sub", None) != "client":
-                print("self check failed")
+                logger.warning("self check failed")
                 await perform_ip_update()
                 return
 
-            print("self check passed")
+            logger.info("self check passed")
         except ServerTimeoutError as e:
-            print(e)
-            print("self check failed")
+            logger.warning(e)
+            logger.warning("self check failed")
             await perform_ip_update()
 
 
@@ -65,24 +69,21 @@ async def perform_ip_update():
     global updaters
     global providers
 
-    print("performing ip update")
+    logger.info("performing ip update")
 
     ip_tasks = [asyncio.create_task(provider.get_ip_address()) for provider in providers]
     addresses = set(await asyncio.gather(*ip_tasks))
 
     if len(addresses) != 1:
-        print(f"something went wrong, got {len(addresses)} addresses:")
-        for address in addresses:
-            print(f"address {address}")
-        return
+        logger.error(f"something went wrong, got {len(addresses)} addresses: {[str(address) for address in addresses]}")
 
     address = addresses.pop()
 
     if not address:
-        print("Unable to get IP address")
+        logger.error(f"Unable to get IP address: {address}")
         return
 
-    print(f"IP address consensus: {address}")
+    logger.info(f"IP address consensus: {address}")
 
     dns_tasks = [asyncio.create_task(updater.set_dns_record(address)) for updater in updaters]
     await asyncio.gather(*dns_tasks)
@@ -118,6 +119,7 @@ updaters = []
 
 
 async def main():
+    logging.basicConfig(level=logging.DEBUG)
     load_dotenv()
     load_config()
 

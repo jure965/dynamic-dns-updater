@@ -1,5 +1,10 @@
+import logging
+
 from aiohttp import ClientSession
 from ipaddress import IPv4Address, IPv6Address, ip_address
+
+
+logger = logging.getLogger(__name__)
 
 
 class UnknownIPProviderException(Exception):
@@ -34,8 +39,8 @@ class PlainIPProvider:
         try:
             address = ip_address(response_body)
         except ValueError as e:
-            print(e)
+            logger.error(e)
 
-        print(f"{type(self).__name__} ({self.url}) returned '{address}'")
+        logger.info(f"{type(self).__name__} ({self.url}) returned '{address}'")
 
         return address
