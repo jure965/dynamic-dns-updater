@@ -36,7 +36,7 @@ async def handle_check(request):
     return web.Response(text=response_token, status=200)
 
 
-@aiocron.crontab("* * * * *", start=False)
+@aiocron.crontab("*/10 * * * * *", start=False)
 async def perform_self_check():
     token = jwt.encode({"sub": "server", "exp": datetime.now(tz=timezone.utc) + timedelta(minutes=1)}, "secret")  # todo: secret from env var
     async with ClientSession() as session:
@@ -139,7 +139,6 @@ async def main():
         asyncio.get_event_loop().run_forever()
     except KeyboardInterrupt:
         await runner.cleanup()
-        perform_self_check.cancel()
 
 
 if __name__ == "__main__":
