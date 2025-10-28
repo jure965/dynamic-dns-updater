@@ -1,4 +1,6 @@
 import asyncio
+import os
+import sys
 from datetime import datetime, timezone, timedelta
 
 import aiocron
@@ -6,6 +8,7 @@ import jwt
 import logging
 
 from dotenv import load_dotenv
+from json_log_formatter import JSONFormatter, VerboseJSONFormatter
 from ruamel.yaml import YAML
 from aiohttp import web, ClientSession, ServerTimeoutError
 
@@ -118,11 +121,16 @@ providers = []
 updaters = []
 
 
-async def main():
-    logging.basicConfig(level=logging.DEBUG)
-    load_dotenv()
-    load_config()
+def configure_logging():
+    log_level = logging.getLevelName(os.environ.get("LOG_LEVEL", "WARNING"))
+    formatter = VerboseJSONFormatter()
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(formatter)
+    logger.root.addHandler(handler)
+    logger.root.setLevel(log_level)
 
+
+async def start_webserver():
     app = web.Application()
     app.add_routes([
         web.get("/ip", handle_ip),
@@ -133,8 +141,21 @@ async def main():
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", 8080)
     await site.start()
+    return runner
 
+
+def start_periodic_tasks():
     perform_self_check.start()
+
+
+async def main():
+    load_dotenv()
+    load_config()
+    configure_logging()
+
+    runner = await start_webserver()
+    start_periodic_tasks()
+
     try:
         asyncio.get_event_loop().run_forever()
     except KeyboardInterrupt:

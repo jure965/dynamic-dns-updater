@@ -462,6 +462,7 @@ dependencies = [
     { name = "aiocron" },
     { name = "aiohttp", extra = ["speedups"] },
     { name = "cloudflare" },
+    { name = "json-log-formatter" },
     { name = "pyjwt" },
     { name = "python-dotenv" },
     { name = "ruamel-yaml" },
@@ -472,6 +473,7 @@ requires-dist = [
     { name = "aiocron", specifier = ">=2.1" },
     { name = "aiohttp", extras = ["speedups"], specifier = ">=3.13.1" },
     { name = "cloudflare", specifier = ">=4.3.1" },
+    { name = "json-log-formatter", specifier = ">=1.1.1" },
     { name = "pyjwt", specifier = ">=2.10.1" },
     { name = "python-dotenv", specifier = ">=1.2.0" },
     { name = "ruamel-yaml", specifier = ">=0.18.16" },
@@ -627,6 +629,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/6f/6d/0703ccc57f3a72335
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0e/61/66938bbb5fc52dbdf84594873d5b51fb1f7c7794e9c0f5bd885f30bc507b/idna-3.11-py3-none-any.whl", hash = "sha256:771a87f49d9defaf64091e6e6fe9c18d4833f140bd19464795bc32d966ca37ea", size = 71008, upload-time = "2025-10-12T14:55:18.883Z" },
 ]
+
+[[package]]
+name = "json-log-formatter"
+version = "1.1.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e8/ef/324f4a28ed0152a32b80685b26316b604218e4ac77487ea82719c3c28bc6/json_log_formatter-1.1.1.tar.gz", hash = "sha256:0815e3b4469e5c79cf3f6dc8a0613ba6601f4a7464f85ba03655cfa6e3e17d10", size = 5896, upload-time = "2025-02-27T22:56:15.643Z" }
 
 [[package]]
 name = "multidict"
