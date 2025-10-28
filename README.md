@@ -42,7 +42,7 @@ updaters:
 ## ToDo
 
 - make aiocron configurable
-- add proper logging
 - containerize
 - add docker compose file
 - add unit tests
+- add types
