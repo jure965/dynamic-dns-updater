@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 async def perform_self_check():
     expires_at = datetime.now(tz=timezone.utc) + timedelta(minutes=1)
     jwt_payload = {"aud": "server", "exp": expires_at}
-    token = jwt.encode(jwt_payload, config.secret)
+    token = jwt.encode(jwt_payload, key=config.jwt_key)
 
     async with ClientSession() as session:
         try:
@@ -36,7 +36,7 @@ async def perform_self_check():
         await perform_ip_update()
 
     try:
-        jwt.decode(token, algorithms=["HS256"], secret=config.secret, audience="client")
+        jwt.decode(token, algorithms=["HS256"], key=config.jwt_key, audience="client")
     except jwt.PyJWTError as e:
         logger.warning(e)
         await perform_ip_update()
