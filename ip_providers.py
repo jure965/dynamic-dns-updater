@@ -30,6 +30,7 @@ def init_providers(provider_list):
 
     config.providers = providers
 
+
 class PlainIPProvider:
     def __init__(self, url, username=None, password=None):
         self.url = url

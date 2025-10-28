@@ -31,6 +31,7 @@ def init_updaters(updater_list):
 
     config.updaters = updaters
 
+
 class BaseDNSUpdater:
     def __init__(self, zone_name, record_type, record_name):
         self.zone_name = zone_name
@@ -57,7 +58,7 @@ class CloudflareDNSUpdater(BaseDNSUpdater):
             return
 
         if ip_address(record.content) == new_ip:
-            logger.info(f"{type(self).__name__} record {record.type} {record.name} {record.content} left unchanged")
+            logger.info(f"{type(self).__name__} {record.type} {record.name} {record.content} left unchanged")
             return
 
         record = await client.dns.records.edit(
@@ -67,7 +68,7 @@ class CloudflareDNSUpdater(BaseDNSUpdater):
             name=self.record_name,
             content=str(new_ip),
         )
-        logger.info(f"{type(self).__name__} record {record.type} {record.name} {record.content} changed content to {new_ip}")
+        logger.info(f"{type(self).__name__} {record.type} {record.name} {record.content} updated to {new_ip}")
 
 
 async def perform_ip_update():
