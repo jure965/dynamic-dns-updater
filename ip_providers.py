@@ -3,6 +3,7 @@ import logging
 from aiohttp import ClientSession
 from ipaddress import IPv4Address, IPv6Address, ip_address
 
+from config import config
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,16 @@ def get_provider_class(provider_type):
     raise UnknownIPProviderException(provider_type)
 
 
+def init_providers(provider_list):
+    providers = []
+
+    for provider in provider_list:
+        provider_class = get_provider_class(provider.get("type", "plain"))
+        provider_params = provider.get("params", None)
+        providers.append(provider_class(**provider_params))
+
+    config.providers = providers
+
 class PlainIPProvider:
     def __init__(self, url, username=None, password=None):
         self.url = url
@@ -28,7 +39,7 @@ class PlainIPProvider:
     async def get_ip_address(self) -> IPv4Address | IPv6Address:
         auth = None
         if self.username and self.password:
-            auth=(self.username, self.password)
+            auth = (self.username, self.password)
 
         async with ClientSession(timeout=5) as session:
             async with session.get(self.url, auth=auth) as response:

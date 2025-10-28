@@ -1,10 +1,12 @@
+import logging
 import os
+import sys
 
 from dotenv import load_dotenv
+from json_log_formatter import VerboseJSONFormatter
 from ruamel.yaml import YAML
 
-from dns_updaters import get_updater_class
-from ip_providers import get_provider_class
+logger = logging.getLogger(__name__)
 
 
 class Config:
@@ -18,31 +20,23 @@ class Config:
         self.self_check_url = os.getenv("SELF_CHECK_URL", f"http://{self.api_host}:{self.api_port}/check")
 
 
-def load_config(path="config.yaml"):
-    global config
+def configure_logging():
+    log_level = logging.getLevelName(config.log_level)
+    formatter = VerboseJSONFormatter()
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(formatter)
+    logger.root.addHandler(handler)
+    logger.root.setLevel(log_level)
 
+
+def load_config(path="config.yaml"):
     yaml = YAML(typ="safe")
 
     with open(path, "r") as config_file:
         config_dict = yaml.load(config_file)
 
-    providers = []
-    for provider in config_dict.get("providers", list()):
-        provider_class = get_provider_class(provider.get("type", "plain"))
-        provider_params = provider.get("params", None)
+    return config_dict.get("providers", list()), config_dict.get("updaters", list())
 
-        if provider_params:
-            providers.append(provider_class(**provider_params))
-        else:
-            providers.append(provider_class())
-    config.providers = providers
-
-    updaters = []
-    for updater in config_dict.get("updaters", list()):
-        updater_class = get_updater_class(updater["type"])
-        updater_params = updater.get("params", None)
-        updaters.append(updater_class(**updater_params))
-    config.updaters = updaters
 
 load_dotenv()
 config = Config()
